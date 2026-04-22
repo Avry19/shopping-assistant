@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopping Assistant 2x2 Prototype</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --border: #d9dfeb;
+      --text: #1f2937;
+      --muted: #667085;
+      --accent: #5b7cff;
+      --accent-soft: #eef2ff;
+      --user: #e9f1ff;
+      --bot: #f8fafc;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #f8faff 0%, #f2f4f8 100%);
+      color: var(--text);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+    }
+
+    .sidebar {
+      background: #fbfcff;
+      border-right: 1px solid var(--border);
+      padding: 24px;
+    }
+
+    .sidebar h1 {
+      margin: 0 0 10px;
+      font-size: 1.35rem;
+    }
+
+    .sidebar p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .control-group {
+      margin-bottom: 18px;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    select, button, input {
+      font: inherit;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+    }
+
+    .condition-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .condition-btn {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: white;
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .condition-btn:hover,
+    .condition-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+
+    .condition-btn strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.92rem;
+    }
+
+    .condition-btn span {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .main {
+      padding: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chat-shell {
+      width: min(940px, 100%);
+      height: min(88vh, 860px);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      background: #fcfdff;
+    }
+
+    .assistant-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .avatar-frame {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      background: #f3f4f6;
+      overflow: hidden;
+      flex: 0 0 auto;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .avatar-sprite {
+      width: 100%;
+      height: 100%;
+      background-repeat: no-repeat;
+      background-size: cover;
+      transform: translateX(0%);
+      transition: transform 0.25s ease;
+    }
+
+    .avatar-sprite.happy { transform: translateX(-33.3333%); }
+    .avatar-sprite.concerned { transform: translateX(-66.6666%); }
+
+    .assistant-text h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .assistant-text .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: var(--accent-soft);
+      color: #334155;
+      border: 1px solid #d8e0ff;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .messages {
+      padding: 22px;
+      overflow-y: auto;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+    }
+
+    .message {
+      display: flex;
+      margin-bottom: 16px;
+    }
+
+    .message.user { justify-content: flex-end; }
+
+    .bubble {
+      max-width: 72%;
+      padding: 14px 16px;
+      border-radius: 18px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .message.user .bubble {
+      background: var(--user);
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.bot .bubble {
+      background: var(--bot);
+      border-bottom-left-radius: 6px;
+    }
+
+    .composer {
+      border-top: 1px solid var(--border);
+      padding: 16px;
+      background: #fcfdff;
+    }
+
+    .composer-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .send-btn, .seed-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .seed-btn {
+      width: 100%;
+      margin-top: 10px;
+      background: #111827;
+    }
+
+    .quick-prompts {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .quick-prompts button {
+      text-align: left;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .footer-note {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .main {
+        padding: 16px;
+      }
+
+      .chat-shell {
+        height: 78vh;
+      }
+
+      .bubble {
+        max-width: 85%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>Shopping assistant 2×2</h1>
+      <p>
+        Prototype for four experimental conditions combining avatar cuteness and linguistic style.
+      </p>
+
+      <div class="control-group">
+        <label class="label" for="conditionSelect">Active condition</label>
+        <select id="conditionSelect"></select>
+      </div>
+
+      <div class="condition-grid" id="conditionButtons"></div>
+
+      <div class="control-group" style="margin-top: 18px;">
+        <label class="label">Seed test prompt</label>
+        <button class="seed-btn" id="seedConversation">Run demo shopping question</button>
+      </div>
+
+      <div class="quick-prompts">
+        <button type="button" data-prompt="I need a birthday gift for my sister under €40.">Gift under €40</button>
+        <button type="button" data-prompt="Find me a practical backpack for commuting and weekend trips.">Backpack for commuting</button>
+         <button type="button" data-prompt="I want running shoes for beginners with good cushioning.">Running shoes for beginners</button>
+      </div>
+
+      <div class="footer-note">
+        <strong>Setup:</strong> Avatar images are hosted on GitHub Pages.
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="chat-shell">
+        <header class="chat-header">
+          <div class="assistant-meta">
+            <div class="avatar-frame">
+              <div class="avatar-sprite" id="avatarSprite"></div>
+            </div>
+            <div class="assistant-text">
+              <h2 id="assistantName">Milo</h2>
+              <div class="subtitle" id="assistantSubtitle"></div>
+            </div>
+          </div>
+          <div class="badge-row">
+            <div class="badge" id="cuteBadge"></div>
+            <div class="badge" id="styleBadge"></div>
+          </div>
+        </header>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="composer">
+          <div class="composer-row">
+            <input id="userInput" type="text" placeholder="Ask for product help, comparisons, or recommendations..." />
+            <button class="send-btn" id="sendBtn">Send</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const CONDITIONS = {
+        cute_warm: {
+          id: "cute_warm",
+          label: "Cute × Warm",
+          cute: "Cute",
+          style: "Warm",
+          avatar: "https://avry19.github.io/shopping-assistant/cute.png",
+	  avatarSize: "92% 92%",
+          assistantName: "Milo",
+          intro: "Hi, I’m Milo. I’d be happy to help you find something that feels right for you today."
+        },
+        cute_task: {
+          id: "cute_task",
+          label: "Cute × Task-oriented",
+          cute: "Cute",
+          style: "Task-oriented",
+          avatar: "https://avry19.github.io/shopping-assistant/cute.png",
+          avatarSize: "92% 92%",
+          assistantName: "Milo",
+          intro: "Hello. I’m Milo. Tell me the product category, budget, and preferences, and I’ll help you narrow the options."
+        },
+        notcute_warm: {
+          id: "notcute_warm",
+          label: "Not cute × Warm",
+          cute: "Not cute",
+          style: "Warm",
+          avatar: "https://avry19.github.io/shopping-assistant/not-cute.png",
+	  avatarSize: "100% 100%",
+          assistantName: "Milo",
+          intro: "Hi, I’m Milo. I’m here to make shopping easier, and we can figure out a good option together."
+        },
+        notcute_task: {
+          id: "notcute_task",
+          label: "Not cute × Task-oriented",
+          cute: "Not cute",
+          style: "Task-oriented",
+          avatar: "https://avry19.github.io/shopping-assistant/not-cute.png",
+	  avatarSize: "100% 100%",
+          assistantName: "Milo",
+          intro: "Hello. I’m Milo. Provide your goal, budget, and constraints to receive focused shopping suggestions."
+        }
+      };
+
+      const products = [
+        {
+          name: "AeroDay Commuter Backpack",
+          category: "backpack",
+          price: 69,
+          tags: ["commuting", "travel", "laptop", "practical"],
+          summary: "Water-resistant backpack with padded laptop sleeve and 22L storage."
+        },
+        {
+          name: "CloudStep Run 2",
+          category: "shoes",
+          price: 95,
+          tags: ["running", "beginner", "cushioning", "comfort"],
+          summary: "Entry-level running shoe with soft foam cushioning and stable heel support."
+        },
+        {
+          name: "LumaGlow Candle Set",
+          category: "gift",
+          price: 28,
+          tags: ["birthday", "gift", "home", "relaxing"],
+          summary: "Gift-ready candle set with three soft scents and premium packaging."
+        },
+        {
+          name: "Northline Weekender",
+          category: "backpack",
+          price: 89,
+          tags: ["weekend", "travel", "commuting", "durable"],
+          summary: "Large-capacity backpack with shoe compartment and trolley sleeve."
+        },
+        {
+          name: "EverDaily Tote",
+          category: "bag",
+          price: 42,
+          tags: ["gift", "commuting", "minimal", "practical"],
+          summary: "Structured everyday tote with zip closure and interior organization."
+        },
+        {
+          name: "PulseFlex Beginner Run",
+          category: "shoes",
+          price: 78,
+          tags: ["running", "beginner", "budget", "cushioning"],
+          summary: "Affordable running shoe designed for shorter distances and soft landings."
+        }
+      ];
+
+      const state = {
+        activeCondition: "cute_warm",
+        messages: [],
+        emotion: "neutral"
+      };
+
+      const el = {
+        conditionSelect: document.getElementById("conditionSelect"),
+        conditionButtons: document.getElementById("conditionButtons"),
+        assistantName: document.getElementById("assistantName"),
+        assistantSubtitle: document.getElementById("assistantSubtitle"),
+        cuteBadge: document.getElementById("cuteBadge"),
+        styleBadge: document.getElementById("styleBadge"),
+        avatarSprite: document.getElementById("avatarSprite"),
+        messages: document.getElementById("messages"),
+        userInput: document.getElementById("userInput"),
+        sendBtn: document.getElementById("sendBtn"),
+        seedConversation: document.getElementById("seedConversation")
+      };
+
+      function init() {
+        buildConditionControls();
+        bindEvents();
+        setCondition(getConditionFromUrl() || "cute_warm");
+      }
+
+      function getConditionFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("condition");
+      }
+
+      function buildConditionControls() {
+        Object.values(CONDITIONS).forEach((condition) => {
+          const option = document.createElement("option");
+          option.value = condition.id;
+          option.textContent = condition.label;
+          el.conditionSelect.appendChild(option);
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "condition-btn";
+          button.dataset.condition = condition.id;
+          button.innerHTML = `<strong>${condition.label}</strong><span>${condition.cute} avatar • ${condition.style} language</span>`;
+          el.conditionButtons.appendChild(button);
+        });
+      }
+
+      function bindEvents() {
+        el.conditionSelect.addEventListener("change", (e) => setCondition(e.target.value));
+
+        el.conditionButtons.addEventListener("click", (e) => {
+          const btn = e.target.closest(".condition-btn");
+          if (!btn) return;
+          setCondition(btn.dataset.condition);
+        });
+
+        el.sendBtn.addEventListener("click", handleSend);
+
+        el.userInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") handleSend();
+        });
+
+        el.seedConversation.addEventListener("click", () => {
+          el.userInput.value = "I need a birthday gift for my sister under €40.";
+          handleSend();
+        });
+
+        document.querySelectorAll("[data-prompt]").forEach((button) => {
+          button.addEventListener("click", () => {
+            el.userInput.value = button.dataset.prompt;
+            handleSend();
+          });
+        });
+      }
+
+      function setCondition(conditionId) {
+        if (!CONDITIONS[conditionId]) return;
+
+        state.activeCondition = conditionId;
+        state.messages = [];
+        state.emotion = "neutral";
+
+        const condition = CONDITIONS[conditionId];
+        el.conditionSelect.value = conditionId;
+        el.assistantName.textContent = condition.assistantName;
+        el.assistantSubtitle.textContent = condition.label;
+        el.cuteBadge.textContent = condition.cute;
+        el.styleBadge.textContent = condition.style;
+        el.avatarSprite.style.backgroundImage = `url("${condition.avatar}")`;
+        el.avatarSprite.style.backgroundSize = condition.avatarSize || "100% 100%";
+        el.avatarSprite.style.backgroundPosition = "center";
+        updateAvatarEmotion("neutral");
+
+        document.querySelectorAll(".condition-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.condition === conditionId);
+        });
+
+        pushBotMessage(condition.intro);
+        renderMessages();
+
+        const nextUrl = `${window.location.pathname}?condition=${conditionId}`;
+        window.history.replaceState({}, "", nextUrl);
+      }
+
+      function updateAvatarEmotion(emotion) {
+        state.emotion = emotion;
+        el.avatarSprite.className = `avatar-sprite ${emotion === "neutral" ? "" : emotion}`.trim();
+      }
+
+      function pushUserMessage(text) {
+        state.messages.push({ role: "user", text });
+      }
+
+      function pushBotMessage(text) {
+        state.messages.push({ role: "bot", text });
+      }
+
+      function handleSend() {
+        const text = el.userInput.value.trim();
+        if (!text) return;
+
+        pushUserMessage(text);
+        el.userInput.value = "";
+        renderMessages();
+
+        const response = generateResponse(text, CONDITIONS[state.activeCondition]);
+        updateAvatarEmotion(response.emotion);
+
+        setTimeout(() => {
+          pushBotMessage(response.text);
+          renderMessages();
+        }, 250);
+      }
+
+      function generateResponse(userText, condition) {
+        const lower = userText.toLowerCase();
+        const matches = scoreProducts(lower).slice(0, 3);
+
+        let emotion = "happy";
+        if (lower.includes("not sure") || lower.includes("confused") || lower.includes("overwhelmed")) {
+          emotion = "concerned";
+        }
+
+        if (!matches.length) {
+          return {
+            emotion,
+            text: condition.style === "Warm"
+              ? "I’d love to help with that. Could you share the type of item, your budget, and anything that matters most to you, such as style, comfort, or brand preference?"
+              : "Please provide the product type, budget range, and key requirements. I can then give you targeted recommendations."
+          };
+        }
+
+        return {
+          emotion,
+          text: condition.style === "Warm"
+            ? buildWarmResponse(userText, matches)
+            : buildTaskResponse(userText, matches)
+        };
+      }
+
+      function scoreProducts(text) {
+        return products
+          .map((product) => {
+            let score = 0;
+            if (text.includes(product.category)) score += 4;
+
+            product.tags.forEach((tag) => {
+              if (text.includes(tag)) score += 2;
+            });
+
+            if (text.includes("gift") && product.category === "gift") score += 3;
+            if (text.includes("backpack") && product.category === "backpack") score += 3;
+            if (text.includes("shoes") && product.category === "shoes") score += 3;
+
+            const budgetMatch = text.match(/(€|\$)?\s?(\d{2,3})/);
+            if (budgetMatch) {
+              const budget = Number(budgetMatch[2]);
+              if (product.price <= budget) score += 2;
+            }
+
+            return { ...product, score };
+          })
+          .filter((product) => product.score > 0)
+          .sort((a, b) => b.score - a.score);
+      }
+
+      function buildWarmResponse(userText, matches) {
+        const opener = choose([
+          "Absolutely, I can help with that.",
+          "That sounds like a fun choice to make.",
+          "Happy to help you narrow it down."
+        ]);
+
+        const recommendationLines = matches.map((item, index) => {
+          const lead = index === 0
+            ? "A strong first option"
+            : index === 1
+              ? "Another nice fit"
+              : "You could also consider";
+
+          return `${lead} is <strong>${item.name}</strong> (€${item.price}), ${item.summary.toLowerCase()}`;
+        });
+
+        const closer = userText.toLowerCase().includes("gift")
+          ? "If you want, I can also suggest which one feels most personal versus most practical."
+          : "If you’d like, I can next compare these options by price, quality, or overall fit.";
+
+        return `${opener}\n\n${recommendationLines.join("\n\n")}\n\n${closer}`;
+      }
+
+      function buildTaskResponse(userText, matches) {
+        const recommendationLines = matches.map((item, index) => {
+          return `${index + 1}. <strong>${item.name}</strong> (€${item.price}) — ${item.summary}`;
+        }).join("\n");
+
+        let nextStep = "Reply with your preferred option and I can refine the recommendation.";
+        if (userText.toLowerCase().includes("budget")) {
+          nextStep = "Reply with a maximum budget if you want a stricter shortlist.";
+        }
+
+        return `Based on your request, these are the best matches:\n\n${recommendationLines}\n\n${nextStep}`;
+      }
+
+      function choose(items) {
+        return items[Math.floor(Math.random() * items.length)];
+      }
+
+      function renderMessages() {
+        el.messages.innerHTML = state.messages.map((message) => {
+          return `
+            <div class="message ${message.role}">
+              <div class="bubble">${message.text}</div>
+            </div>
+          `;
+        }).join("");
+
+        el.messages.scrollTop = el.messages.scrollHeight;
+      }
+
+      init();
+    });
+  </script>
+</body>
+</html>
